@@ -525,8 +525,9 @@ async function main(): Promise<void> {
   // Check if using OpenAI-compatible API
   const provider = containerInput.llmConfig?.provider || 'claude';
   
-  if (provider === 'openai') {
-    // Use OpenAI adapter
+  // Route to appropriate implementation
+  if (provider === 'openai' || provider === 'openrouter' || provider === 'openai-compatible') {
+    // Use OpenAI adapter for all OpenAI-compatible APIs
     await runOpenAIMode(containerInput);
   } else {
     // Use Claude SDK (default)

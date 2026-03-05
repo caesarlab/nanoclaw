@@ -48,6 +48,17 @@ export const PROVIDER_DEFAULTS: Record<LLMProvider, Partial<LLMConfig>> = {
     maxTokens: 4096,
     baseURL: 'https://api.openai.com/v1',
   },
+  openrouter: {
+    model: 'anthropic/claude-3.5-sonnet',
+    temperature: 0.7,
+    maxTokens: 4096,
+    baseURL: 'https://openrouter.ai/api/v1',
+  },
+  'openai-compatible': {
+    model: 'gpt-4-turbo',
+    temperature: 0.7,
+    maxTokens: 4096,
+  },
 };
 
 /**
@@ -75,18 +86,25 @@ export function getAPIKey(config: LLMConfig): string | undefined {
     return config.apiKey;
   }
 
-  // Check environment based on provider and baseURL
-  if (config.provider === 'openai') {
-    // Check for OpenRouter
-    if (config.baseURL?.includes('openrouter.ai')) {
+  // Check environment based on provider
+  switch (config.provider) {
+    case 'openai':
+      return process.env.OPENAI_API_KEY || envConfig.OPENAI_API_KEY;
+    
+    case 'openrouter':
       return process.env.OPENROUTER_API_KEY || envConfig.OPENROUTER_API_KEY;
-    }
-    // Default to OpenAI key
-    return process.env.OPENAI_API_KEY || envConfig.OPENAI_API_KEY;
+    
+    case 'openai-compatible':
+      // For generic OpenAI-compatible APIs, check OPENAI_API_KEY as fallback
+      return process.env.OPENAI_API_KEY || envConfig.OPENAI_API_KEY;
+    
+    case 'claude':
+      // Claude uses ANTHROPIC_API_KEY (handled by SDK)
+      return undefined;
+    
+    default:
+      return undefined;
   }
-
-  // Claude uses ANTHROPIC_API_KEY (handled by SDK)
-  return undefined;
 }
 
 /**
@@ -97,8 +115,9 @@ export function validateLLMConfig(config: LLMConfig): { valid: boolean; error?: 
     return { valid: false, error: 'LLM provider is required' };
   }
 
-  if (!['claude', 'openai'].includes(config.provider)) {
-    return { valid: false, error: `Invalid LLM provider: ${config.provider}` };
+  const validProviders = ['claude', 'openai', 'openrouter', 'openai-compatible'];
+  if (!validProviders.includes(config.provider)) {
+    return { valid: false, error: `Invalid LLM provider: ${config.provider}. Valid options: ${validProviders.join(', ')}` };
   }
 
   if (config.temperature !== undefined && (config.temperature < 0 || config.temperature > 1)) {

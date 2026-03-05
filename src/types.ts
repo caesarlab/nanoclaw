@@ -33,7 +33,7 @@ export interface ContainerConfig {
 }
 
 // LLM Configuration Types
-export type LLMProvider = 'claude' | 'openai';
+export type LLMProvider = 'claude' | 'openai' | 'openrouter' | 'openai-compatible';
 
 export interface LLMConfig {
   provider: LLMProvider;

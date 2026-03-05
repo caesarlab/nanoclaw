@@ -9,37 +9,70 @@ LLM settings are resolved in this order:
 2. **Global defaults** (from `.env` file)
 3. **Hardcoded defaults** (Claude with sensible parameters)
 
+## Supported Providers
+
+NanoClaw supports the following LLM providers:
+
+- **`claude`** - Anthropic Claude (default, full feature support)
+- **`openai`** - OpenAI GPT models
+- **`openrouter`** - OpenRouter (access to multiple models)
+- **`openai-compatible`** - Any OpenAI-compatible API (Together AI, Groq, Perplexity, etc.)
+
 ## Global Configuration
 
 Set default LLM provider in your `.env` file:
 
-```bash
-# Use Claude (default)
-LLM_PROVIDER=claude
-ANTHROPIC_API_KEY=your_key_here
+### Claude (Default)
 
-# Or use OpenAI-compatible API
+```bash
+LLM_PROVIDER=claude
+ANTHROPIC_API_KEY=sk-ant-your_key_here
+```
+
+### OpenAI
+
+```bash
 LLM_PROVIDER=openai
-OPENAI_API_KEY=your_key_here
-LLM_BASE_URL=https://api.openai.com/v1
+OPENAI_API_KEY=sk-your_key_here
 LLM_MODEL=gpt-4-turbo
+```
+
+### OpenRouter
+
+```bash
+LLM_PROVIDER=openrouter
+OPENROUTER_API_KEY=sk-or-your_key_here
+LLM_MODEL=anthropic/claude-3.5-sonnet
+```
+
+### Other OpenAI-Compatible APIs
+
+```bash
+LLM_PROVIDER=openai-compatible
+OPENAI_API_KEY=your_api_key_here
+LLM_BASE_URL=https://api.together.xyz/v1
+LLM_MODEL=meta-llama/Llama-3-70b-chat-hf
 ```
 
 ### Available Parameters
 
 ```bash
-# Provider selection
-LLM_PROVIDER=claude  # or 'openai'
+# Provider selection (REQUIRED)
+LLM_PROVIDER=claude  # Options: claude, openai, openrouter, openai-compatible
+
+# API Keys (provider-specific)
+ANTHROPIC_API_KEY=your_key  # For claude provider
+OPENAI_API_KEY=your_key  # For openai and openai-compatible providers
+OPENROUTER_API_KEY=your_key  # For openrouter provider
 
 # Model selection (provider-specific)
-LLM_MODEL=claude-3-5-sonnet-20241022  # for Claude
-# LLM_MODEL=gpt-4-turbo  # for OpenAI
-# LLM_MODEL=anthropic/claude-3.5-sonnet  # for OpenRouter
+LLM_MODEL=claude-3-5-sonnet-20241022  # for claude
+# LLM_MODEL=gpt-4-turbo  # for openai
+# LLM_MODEL=anthropic/claude-3.5-sonnet  # for openrouter
+# LLM_MODEL=meta-llama/Llama-3-70b-chat-hf  # for openai-compatible
 
 # API configuration
-LLM_BASE_URL=https://api.openai.com/v1  # Required for OpenAI-compatible APIs
-OPENAI_API_KEY=your_key
-OPENROUTER_API_KEY=your_key  # Auto-detected for OpenRouter URLs
+LLM_BASE_URL=https://api.openai.com/v1  # Required for openai-compatible, optional for others
 
 # Model parameters
 LLM_TEMPERATURE=0.7  # 0-1, controls randomness
@@ -103,7 +136,6 @@ setRegisteredGroup('family-jid', {
   llmConfig: {
     provider: 'openai',
     model: 'gpt-4-turbo',
-    baseURL: 'https://api.openai.com/v1',
     temperature: 0.7,
   },
 });
@@ -115,9 +147,8 @@ setRegisteredGroup('work-jid', {
   trigger: '@Andy',
   added_at: new Date().toISOString(),
   llmConfig: {
-    provider: 'openai',
+    provider: 'openrouter',
     model: 'anthropic/claude-3.5-sonnet',
-    baseURL: 'https://openrouter.ai/api/v1',
     temperature: 0.5,
   },
 });
@@ -144,7 +175,6 @@ Available models:
 ```bash
 LLM_PROVIDER=openai
 OPENAI_API_KEY=sk-...
-LLM_BASE_URL=https://api.openai.com/v1
 LLM_MODEL=gpt-4-turbo
 ```
 
@@ -156,18 +186,23 @@ Available models:
 ### OpenRouter
 
 ```bash
-LLM_PROVIDER=openai
+LLM_PROVIDER=openrouter
 OPENROUTER_API_KEY=sk-or-...
-LLM_BASE_URL=https://openrouter.ai/api/v1
 LLM_MODEL=anthropic/claude-3.5-sonnet
 ```
 
 OpenRouter provides access to many models. See [openrouter.ai/docs](https://openrouter.ai/docs) for available models.
 
+Popular models on OpenRouter:
+- `anthropic/claude-3.5-sonnet`
+- `openai/gpt-4-turbo`
+- `meta-llama/llama-3-70b-instruct`
+- `google/gemini-pro`
+
 ### Together AI
 
 ```bash
-LLM_PROVIDER=openai
+LLM_PROVIDER=openai-compatible
 OPENAI_API_KEY=your_together_key
 LLM_BASE_URL=https://api.together.xyz/v1
 LLM_MODEL=meta-llama/Llama-3-70b-chat-hf
@@ -176,10 +211,19 @@ LLM_MODEL=meta-llama/Llama-3-70b-chat-hf
 ### Groq
 
 ```bash
-LLM_PROVIDER=openai
-OPENAI_API_KEY=your_groq_key
+LLM_PROVIDER=openai-compatible
+OPENAI_API_KEY=gsk_your_groq_key
 LLM_BASE_URL=https://api.groq.com/openai/v1
 LLM_MODEL=llama3-70b-8192
+```
+
+### Perplexity
+
+```bash
+LLM_PROVIDER=openai-compatible
+OPENAI_API_KEY=pplx-your_key
+LLM_BASE_URL=https://api.perplexity.ai
+LLM_MODEL=llama-3-sonar-large-32k-online
 ```
 
 ## Retry and Fallback Strategy
@@ -194,10 +238,9 @@ Example configuration with fallback:
 
 ```bash
 # Primary: OpenRouter
-LLM_PROVIDER=openai
-LLM_BASE_URL=https://openrouter.ai/api/v1
-LLM_MODEL=anthropic/claude-3.5-sonnet
+LLM_PROVIDER=openrouter
 OPENROUTER_API_KEY=your_key
+LLM_MODEL=anthropic/claude-3.5-sonnet
 
 # Fallback: Direct Claude
 LLM_FALLBACK_PROVIDER=claude
@@ -219,7 +262,7 @@ LLM_RETRY_DELAY=1000
 - ✅ Streaming responses
 - ✅ Memory (CLAUDE.md)
 
-### OpenAI-Compatible Features (provider: 'openai')
+### OpenAI-Compatible Features (provider: 'openai', 'openrouter', 'openai-compatible')
 - ✅ Basic tool support (Bash, file operations, web search)
 - ⚠️ Limited MCP support (via IPC only)
 - ❌ Agent swarms (not yet implemented)
@@ -244,11 +287,16 @@ LLM Provider: openai
 ## Troubleshooting
 
 ### "OpenAI API key is required"
-- Ensure `OPENAI_API_KEY` or `OPENROUTER_API_KEY` is set in `.env`
+- Ensure the correct API key is set for your provider:
+  - `claude`: `ANTHROPIC_API_KEY`
+  - `openai`: `OPENAI_API_KEY`
+  - `openrouter`: `OPENROUTER_API_KEY`
+  - `openai-compatible`: `OPENAI_API_KEY`
 - For per-group config, ensure `apiKey` is set in the group's `llmConfig`
 
 ### "OpenAI base URL is required"
-- Set `LLM_BASE_URL` in `.env` or in the group's `llmConfig`
+- For `openai-compatible` provider, `LLM_BASE_URL` is required
+- For `openai` and `openrouter`, base URL is auto-set but can be overridden
 
 ### Requests timing out
 - Increase `CONTAINER_TIMEOUT` in `.env`
@@ -273,15 +321,22 @@ Different providers have different pricing. Here are some strategies:
    }
    ```
 
-2. **Use OpenRouter for cost comparison**:
-   OpenRouter shows pricing for all models and can route to the cheapest option
-
-3. **Set lower max_tokens for groups that don't need long responses**:
+2. **Use cheaper models for simple tasks**:
    ```typescript
+   // Simple group uses GPT-3.5
    llmConfig: {
-     maxTokens: 1024,  // Shorter responses = lower cost
+     provider: 'openai',
+     model: 'gpt-3.5-turbo',
    }
    ```
+
+3. **Use OpenRouter for cost comparison**:
+   ```bash
+   LLM_PROVIDER=openrouter
+   OPENROUTER_API_KEY=your_key
+   LLM_MODEL=anthropic/claude-3.5-sonnet
+   ```
+   OpenRouter shows pricing for all models and can route to the cheapest option
 
 4. **Use fallback to cheaper model**:
    ```bash
