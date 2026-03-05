@@ -2,7 +2,7 @@ import { ChildProcess } from 'child_process';
 import { CronExpressionParser } from 'cron-parser';
 import fs from 'fs';
 
-import { ASSISTANT_NAME, SCHEDULER_POLL_INTERVAL, TIMEZONE } from './config.js';
+import { ASSISTANT_NAME, SCHEDULER_POLL_INTERVAL, TIMEZONE, STAGEHAND_ENABLED, STAGEHAND_MAX_ACTIONS_PER_SESSION, STAGEHAND_COST_LIMIT, STAGEHAND_FALLBACK_TO_AGENT_BROWSER } from './config.js';
 import {
   ContainerOutput,
   runContainerAgent,
@@ -195,6 +195,12 @@ async function runTask(
           retryDelay: llmConfig.retryDelay,
           fallbackProvider: llmConfig.fallbackProvider,
           fallbackModel: llmConfig.fallbackModel,
+        },
+        stagehandConfig: {
+          enabled: STAGEHAND_ENABLED,
+          maxActionsPerSession: STAGEHAND_MAX_ACTIONS_PER_SESSION,
+          costLimit: STAGEHAND_COST_LIMIT,
+          fallbackToAgentBrowser: STAGEHAND_FALLBACK_TO_AGENT_BROWSER,
         },
       },
       (proc, containerName) =>

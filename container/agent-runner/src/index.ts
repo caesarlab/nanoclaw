@@ -41,6 +41,12 @@ interface ContainerInput {
     fallbackProvider?: string;
     fallbackModel?: string;
   };
+  stagehandConfig?: {
+    enabled: boolean;
+    maxActionsPerSession: number;
+    costLimit: number;
+    fallbackToAgentBrowser: boolean;
+  };
 }
 
 interface ContainerOutput {

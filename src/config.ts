@@ -67,3 +67,16 @@ export const TRIGGER_PATTERN = new RegExp(
 // Uses system timezone by default
 export const TIMEZONE =
   process.env.TZ || Intl.DateTimeFormat().resolvedOptions().timeZone;
+
+// Stagehand configuration
+export const STAGEHAND_ENABLED =
+  process.env.STAGEHAND_ENABLED === 'true';
+export const STAGEHAND_MAX_ACTIONS_PER_SESSION = parseInt(
+  process.env.STAGEHAND_MAX_ACTIONS_PER_SESSION || '10',
+  10,
+);
+export const STAGEHAND_COST_LIMIT = parseFloat(
+  process.env.STAGEHAND_COST_LIMIT || '0.50',
+);
+export const STAGEHAND_FALLBACK_TO_AGENT_BROWSER =
+  process.env.STAGEHAND_FALLBACK_TO_AGENT_BROWSER !== 'false';

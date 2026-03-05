@@ -6,6 +6,10 @@ import {
   IDLE_TIMEOUT,
   POLL_INTERVAL,
   TRIGGER_PATTERN,
+  STAGEHAND_ENABLED,
+  STAGEHAND_MAX_ACTIONS_PER_SESSION,
+  STAGEHAND_COST_LIMIT,
+  STAGEHAND_FALLBACK_TO_AGENT_BROWSER,
 } from './config.js';
 import './channels/index.js';
 import {
@@ -327,6 +331,12 @@ async function runAgent(
           retryDelay: llmConfig.retryDelay,
           fallbackProvider: llmConfig.fallbackProvider,
           fallbackModel: llmConfig.fallbackModel,
+        },
+        stagehandConfig: {
+          enabled: STAGEHAND_ENABLED,
+          maxActionsPerSession: STAGEHAND_MAX_ACTIONS_PER_SESSION,
+          costLimit: STAGEHAND_COST_LIMIT,
+          fallbackToAgentBrowser: STAGEHAND_FALLBACK_TO_AGENT_BROWSER,
         },
       },
       (proc, containerName) =>
