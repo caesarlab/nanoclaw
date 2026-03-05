@@ -80,6 +80,7 @@ function createSchema(database: Database.Database): void {
       trigger_pattern TEXT NOT NULL,
       added_at TEXT NOT NULL,
       container_config TEXT,
+      llm_config TEXT,
       requires_trigger INTEGER DEFAULT 1
     );
   `);
@@ -97,6 +98,15 @@ function createSchema(database: Database.Database): void {
   try {
     database.exec(
       `ALTER TABLE messages ADD COLUMN is_bot_message INTEGER DEFAULT 0`,
+    );
+  } catch {
+    /* column already exists */
+  }
+
+  // Add llm_config column if it doesn't exist (migration for existing DBs)
+  try {
+    database.exec(
+      `ALTER TABLE registered_groups ADD COLUMN llm_config TEXT`,
     );
     // Backfill: mark existing bot messages that used the content prefix pattern
     database
@@ -542,6 +552,7 @@ export function getRegisteredGroup(
         trigger_pattern: string;
         added_at: string;
         container_config: string | null;
+        llm_config: string | null;
         requires_trigger: number | null;
         is_main: number | null;
       }
@@ -563,6 +574,7 @@ export function getRegisteredGroup(
     containerConfig: row.container_config
       ? JSON.parse(row.container_config)
       : undefined,
+    llmConfig: row.llm_config ? JSON.parse(row.llm_config) : undefined,
     requiresTrigger:
       row.requires_trigger === null ? undefined : row.requires_trigger === 1,
     isMain: row.is_main === 1 ? true : undefined,
@@ -574,8 +586,8 @@ export function setRegisteredGroup(jid: string, group: RegisteredGroup): void {
     throw new Error(`Invalid group folder "${group.folder}" for JID ${jid}`);
   }
   db.prepare(
-    `INSERT OR REPLACE INTO registered_groups (jid, name, folder, trigger_pattern, added_at, container_config, requires_trigger, is_main)
-     VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
+    `INSERT OR REPLACE INTO registered_groups (jid, name, folder, trigger_pattern, added_at, container_config, llm_config, requires_trigger, is_main)
+     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
   ).run(
     jid,
     group.name,
@@ -583,6 +595,7 @@ export function setRegisteredGroup(jid: string, group: RegisteredGroup): void {
     group.trigger,
     group.added_at,
     group.containerConfig ? JSON.stringify(group.containerConfig) : null,
+    group.llmConfig ? JSON.stringify(group.llmConfig) : null,
     group.requiresTrigger === undefined ? 1 : group.requiresTrigger ? 1 : 0,
     group.isMain ? 1 : 0,
   );
@@ -596,6 +609,7 @@ export function getAllRegisteredGroups(): Record<string, RegisteredGroup> {
     trigger_pattern: string;
     added_at: string;
     container_config: string | null;
+    llm_config: string | null;
     requires_trigger: number | null;
     is_main: number | null;
   }>;
@@ -616,6 +630,7 @@ export function getAllRegisteredGroups(): Record<string, RegisteredGroup> {
       containerConfig: row.container_config
         ? JSON.parse(row.container_config)
         : undefined,
+      llmConfig: row.llm_config ? JSON.parse(row.llm_config) : undefined,
       requiresTrigger:
         row.requires_trigger === null ? undefined : row.requires_trigger === 1,
       isMain: row.is_main === 1 ? true : undefined,

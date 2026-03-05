@@ -169,6 +169,10 @@ async function runTask(
   };
 
   try {
+    // Get effective LLM config for this group
+    const llmConfig = getEffectiveLLMConfig(group);
+    const apiKey = getAPIKey(llmConfig);
+
     const output = await runContainerAgent(
       group,
       {
@@ -179,6 +183,19 @@ async function runTask(
         isMain,
         isScheduledTask: true,
         assistantName: ASSISTANT_NAME,
+        llmConfig: {
+          provider: llmConfig.provider,
+          model: llmConfig.model,
+          apiKey,
+          baseURL: llmConfig.baseURL,
+          temperature: llmConfig.temperature,
+          maxTokens: llmConfig.maxTokens,
+          topP: llmConfig.topP,
+          maxRetries: llmConfig.maxRetries,
+          retryDelay: llmConfig.retryDelay,
+          fallbackProvider: llmConfig.fallbackProvider,
+          fallbackModel: llmConfig.fallbackModel,
+        },
       },
       (proc, containerName) =>
         deps.onProcess(task.chat_jid, proc, containerName, task.group_folder),

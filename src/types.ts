@@ -32,12 +32,32 @@ export interface ContainerConfig {
   timeout?: number; // Default: 300000 (5 minutes)
 }
 
+// LLM Configuration Types
+export type LLMProvider = 'claude' | 'openai';
+
+export interface LLMConfig {
+  provider: LLMProvider;
+  model?: string; // e.g., 'claude-3-5-sonnet-20241022', 'gpt-4-turbo', etc.
+  apiKey?: string; // Optional override (falls back to env)
+  baseURL?: string; // For OpenAI-compatible APIs (OpenRouter, Together, etc.)
+  temperature?: number; // 0-1, default varies by provider
+  maxTokens?: number; // Max completion tokens
+  topP?: number; // Nucleus sampling
+  // Retry configuration
+  maxRetries?: number; // Default: 3
+  retryDelay?: number; // Milliseconds between retries, default: 1000
+  // Fallback configuration
+  fallbackProvider?: LLMProvider;
+  fallbackModel?: string;
+}
+
 export interface RegisteredGroup {
   name: string;
   folder: string;
   trigger: string;
   added_at: string;
   containerConfig?: ContainerConfig;
+  llmConfig?: LLMConfig; // Per-group LLM configuration
   requiresTrigger?: boolean; // Default: true for groups, false for solo chats
   isMain?: boolean; // True for the main control group (no trigger, elevated privileges)
 }

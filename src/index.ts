@@ -48,6 +48,7 @@ import {
   shouldDropMessage,
 } from './sender-allowlist.js';
 import { startSchedulerLoop } from './task-scheduler.js';
+import { getEffectiveLLMConfig, getAPIKey } from './llm-config.js';
 import { Channel, NewMessage, RegisteredGroup } from './types.js';
 import { logger } from './logger.js';
 
@@ -301,6 +302,10 @@ async function runAgent(
     : undefined;
 
   try {
+    // Get effective LLM config for this group
+    const llmConfig = getEffectiveLLMConfig(group);
+    const apiKey = getAPIKey(llmConfig);
+
     const output = await runContainerAgent(
       group,
       {
@@ -310,6 +315,19 @@ async function runAgent(
         chatJid,
         isMain,
         assistantName: ASSISTANT_NAME,
+        llmConfig: {
+          provider: llmConfig.provider,
+          model: llmConfig.model,
+          apiKey,
+          baseURL: llmConfig.baseURL,
+          temperature: llmConfig.temperature,
+          maxTokens: llmConfig.maxTokens,
+          topP: llmConfig.topP,
+          maxRetries: llmConfig.maxRetries,
+          retryDelay: llmConfig.retryDelay,
+          fallbackProvider: llmConfig.fallbackProvider,
+          fallbackModel: llmConfig.fallbackModel,
+        },
       },
       (proc, containerName) =>
         queue.registerProcess(chatJid, proc, containerName, group.folder),

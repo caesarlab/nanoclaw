@@ -28,6 +28,19 @@ interface ContainerInput {
   isScheduledTask?: boolean;
   assistantName?: string;
   secrets?: Record<string, string>;
+  llmConfig?: {
+    provider: string;
+    model?: string;
+    apiKey?: string;
+    baseURL?: string;
+    temperature?: number;
+    maxTokens?: number;
+    topP?: number;
+    maxRetries?: number;
+    retryDelay?: number;
+    fallbackProvider?: string;
+    fallbackModel?: string;
+  };
 }
 
 interface ContainerOutput {
@@ -499,6 +512,7 @@ async function main(): Promise<void> {
     // Delete the temp file the entrypoint wrote — it contains secrets
     try { fs.unlinkSync('/tmp/input.json'); } catch { /* may not exist */ }
     log(`Received input for group: ${containerInput.groupFolder}`);
+    log(`LLM Provider: ${containerInput.llmConfig?.provider || 'claude'}`);
   } catch (err) {
     writeOutput({
       status: 'error',
@@ -508,6 +522,99 @@ async function main(): Promise<void> {
     process.exit(1);
   }
 
+  // Check if using OpenAI-compatible API
+  const provider = containerInput.llmConfig?.provider || 'claude';
+  
+  if (provider === 'openai') {
+    // Use OpenAI adapter
+    await runOpenAIMode(containerInput);
+  } else {
+    // Use Claude SDK (default)
+    await runClaudeMode(containerInput);
+  }
+}
+
+/**
+ * Run using OpenAI-compatible API
+ */
+async function runOpenAIMode(containerInput: ContainerInput): Promise<void> {
+  const { runOpenAIConversation } = await import('./openai-adapter.js');
+  
+  const llmConfig = containerInput.llmConfig!;
+  
+  if (!llmConfig.apiKey) {
+    writeOutput({
+      status: 'error',
+      result: null,
+      error: 'OpenAI API key is required'
+    });
+    process.exit(1);
+  }
+
+  if (!llmConfig.baseURL) {
+    writeOutput({
+      status: 'error',
+      result: null,
+      error: 'OpenAI base URL is required'
+    });
+    process.exit(1);
+  }
+
+  // Load global CLAUDE.md as system prompt
+  const globalClaudeMdPath = '/workspace/global/CLAUDE.md';
+  let systemPrompt: string | undefined;
+  if (!containerInput.isMain && fs.existsSync(globalClaudeMdPath)) {
+    systemPrompt = fs.readFileSync(globalClaudeMdPath, 'utf-8');
+  }
+
+  // Load group CLAUDE.md
+  const groupClaudeMdPath = '/workspace/group/CLAUDE.md';
+  if (fs.existsSync(groupClaudeMdPath)) {
+    const groupContext = fs.readFileSync(groupClaudeMdPath, 'utf-8');
+    systemPrompt = systemPrompt ? `${systemPrompt}\n\n${groupContext}` : groupContext;
+  }
+
+  try {
+    const result = await runOpenAIConversation(
+      {
+        apiKey: llmConfig.apiKey,
+        baseURL: llmConfig.baseURL,
+        model: llmConfig.model || 'gpt-4-turbo',
+        temperature: llmConfig.temperature,
+        maxTokens: llmConfig.maxTokens,
+        topP: llmConfig.topP,
+      },
+      containerInput.prompt,
+      systemPrompt,
+    );
+
+    writeOutput({
+      status: 'success',
+      result,
+    });
+  } catch (err) {
+    const errorMessage = err instanceof Error ? err.message : String(err);
+    log(`OpenAI error: ${errorMessage}`);
+    
+    // Try fallback if configured
+    if (llmConfig.fallbackProvider === 'claude') {
+      log('Attempting fallback to Claude...');
+      await runClaudeMode(containerInput);
+    } else {
+      writeOutput({
+        status: 'error',
+        result: null,
+        error: errorMessage
+      });
+      process.exit(1);
+    }
+  }
+}
+
+/**
+ * Run using Claude SDK (original implementation)
+ */
+async function runClaudeMode(containerInput: ContainerInput): Promise<void> {
   // Build SDK env: merge secrets into process.env for the SDK only.
   // Secrets never touch process.env itself, so Bash subprocesses can't see them.
   const sdkEnv: Record<string, string | undefined> = { ...process.env };

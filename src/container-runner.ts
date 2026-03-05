@@ -39,6 +39,19 @@ export interface ContainerInput {
   isScheduledTask?: boolean;
   assistantName?: string;
   secrets?: Record<string, string>;
+  llmConfig?: {
+    provider: string;
+    model?: string;
+    apiKey?: string;
+    baseURL?: string;
+    temperature?: number;
+    maxTokens?: number;
+    topP?: number;
+    maxRetries?: number;
+    retryDelay?: number;
+    fallbackProvider?: string;
+    fallbackModel?: string;
+  };
 }
 
 export interface ContainerOutput {
